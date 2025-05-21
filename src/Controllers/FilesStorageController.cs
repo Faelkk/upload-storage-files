@@ -21,6 +21,8 @@ public class FilestorageController : Controller
         return Ok(new { message = "Hello World" });
     }
 
+
+
     [HttpPost("/upload-local")]
     public async Task<IActionResult> UploadFilesLocal(List<IFormFile> files)
     {
@@ -62,6 +64,33 @@ public class FilestorageController : Controller
             count = files.Count,
             urls = filePaths
         });
+    }
+
+    [HttpDelete("/delete-local/{fileName}")]
+    public IActionResult DeleteImageLocal(string fileName)
+    {
+
+        if (fileName.Contains("..") || Path.GetFileName(fileName) != fileName)
+            return BadRequest("Nome de arquivo inválido.");
+
+        if (string.IsNullOrEmpty(fileName))
+            return BadRequest("Nome do arquivo não fornecido.");
+
+        var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "UploadedFiles");
+        var filePath = Path.Combine(uploadsFolder, fileName);
+
+        if (!System.IO.File.Exists(filePath))
+            return NotFound("Arquivo não encontrado.");
+
+        try
+        {
+            System.IO.File.Delete(filePath);
+            return Ok("Arquivo deletado com sucesso.");
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, $"Erro ao deletar o arquivo: {ex.Message}");
+        }
     }
 
 
