@@ -1,18 +1,27 @@
+using FilesStorage.Messages;
+using FilesStorage.Services;
+using MassTransit;
 using Microsoft.AspNetCore.Mvc;
 
 namespace FilesStorage.Controllers;
-
 
 [ApiController]
 [Route("[controller]")]
 public class FilestorageController : Controller
 {
+    private readonly IFileLocalService _fileLocalService;
+    private readonly IFileCloudService _fileCloudService;
+    private readonly ISaveStorageService _saveStorageService;
 
-    private readonly CloudinaryService _cloudinaryService;
-
-    public FilestorageController(CloudinaryService cloudinaryService)
+    public FilestorageController(
+        IFileLocalService fileLocalService,
+        IFileCloudService fileCloudService,
+        ISaveStorageService saveStorageService
+    )
     {
-        _cloudinaryService = cloudinaryService;
+        _fileLocalService = fileLocalService;
+        _fileCloudService = fileCloudService;
+        _saveStorageService = saveStorageService;
     }
 
     [HttpGet("/hello-world")]
@@ -21,119 +30,58 @@ public class FilestorageController : Controller
         return Ok(new { message = "Hello World" });
     }
 
-
-
     [HttpPost("/upload-local")]
     public async Task<IActionResult> UploadFilesLocal(List<IFormFile> files)
     {
-        if (files == null || files.Count == 0)
-            return BadRequest("Nenhum arquivo recebido");
-
-        var permittedExtensions = new[] { ".jpg", ".jpeg", ".png", ".svg" };
-        var permittedContentTypes = new[] { "image/jpeg", "image/png", "image/svg+xml" };
-
-        foreach (var file in files)
-        {
-            var ext = Path.GetExtension(file.FileName).ToLowerInvariant();
-            if (string.IsNullOrEmpty(ext) || !permittedExtensions.Contains(ext) || !permittedContentTypes.Contains(file.ContentType))
-                return BadRequest($"Tipo de arquivo não permitido: {file.FileName}");
-        }
-
-        var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "UploadedFiles");
-        if (!Directory.Exists(uploadsFolder))
-            Directory.CreateDirectory(uploadsFolder);
-
-        var filePaths = new List<string>();
-
-        foreach (var file in files)
-        {
-            if (file.Length > 0)
-            {
-                var filePath = Path.Combine(uploadsFolder, file.FileName);
-                filePaths.Add(filePath);
-
-                using (var stream = new FileStream(filePath, FileMode.Create))
-                {
-                    await file.CopyToAsync(stream);
-                }
-            }
-        }
-
-        return Ok(new
-        {
-            count = files.Count,
-            urls = filePaths
-        });
+        var (success, error) = await _fileLocalService.UploadFilesAsync(files);
+        if (!success)
+            return BadRequest(error);
+        return Accepted(new { count = files.Count, message = "Upload local em processamento" });
     }
 
     [HttpDelete("/delete-local/{fileName}")]
-    public IActionResult DeleteImageLocal(string fileName)
+    public async Task<IActionResult> DeleteImageLocal(string fileName)
     {
-
-        if (fileName.Contains("..") || Path.GetFileName(fileName) != fileName)
-            return BadRequest("Nome de arquivo inválido.");
-
-        if (string.IsNullOrEmpty(fileName))
-            return BadRequest("Nome do arquivo não fornecido.");
-
-        var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "UploadedFiles");
-        var filePath = Path.Combine(uploadsFolder, fileName);
-
-        if (!System.IO.File.Exists(filePath))
-            return NotFound("Arquivo não encontrado.");
-
-        try
-        {
-            System.IO.File.Delete(filePath);
-            return Ok("Arquivo deletado com sucesso.");
-        }
-        catch (Exception ex)
-        {
-            return StatusCode(500, $"Erro ao deletar o arquivo: {ex.Message}");
-        }
+        var (success, error) = await _fileLocalService.DeleteFileAsync(fileName);
+        if (!success)
+            return BadRequest(error);
+        return Ok(new { message = $"Remoção do arquivo local '{fileName}' em processamento." });
     }
 
-
-    [HttpPost("/upload-cloudinary")]
-    public async Task<IActionResult> UploadFilesCloudinary(List<IFormFile> files)
+    [HttpPost("/upload-cloud")]
+    public async Task<IActionResult> UploadFilesCloud(List<IFormFile> files)
     {
-        if (files == null || files.Count == 0)
-            return BadRequest("Nenhum arquivo recebido");
-
-        var permittedExtensions = new[] { ".jpg", ".jpeg", ".png", ".svg" };
-        var permittedContentTypes = new[] { "image/jpeg", "image/png", "image/svg+xml" };
-
-        var urls = new List<string>();
-
-        foreach (var file in files)
-        {
-            var ext = Path.GetExtension(file.FileName).ToLowerInvariant();
-            if (string.IsNullOrEmpty(ext) || !permittedExtensions.Contains(ext) || !permittedContentTypes.Contains(file.ContentType))
-                return BadRequest($"Tipo de arquivo não permitido: {file.FileName}");
-
-            var url = await _cloudinaryService.UploadImageAsync(file);
-            urls.Add(url);
-        }
-
-        return Ok(new
-        {
-            count = files.Count,
-            urls
-        });
+        var (success, error) = await _fileCloudService.UploadFilesAsync(files);
+        if (!success)
+            return BadRequest(error);
+        return Ok(new { count = files.Count, message = "Upload na nuvem em processamento" });
     }
 
-    [HttpDelete("/delete-cloudinary/{publicId}")]
-    public async Task<IActionResult> DeleteImageCloudinary(string publicId)
+    [HttpDelete("/delete-cloud/{publicId}")]
+    public async Task<IActionResult> DeleteImageCloud(string publicId, [FromQuery] string fileName)
     {
-        if (string.IsNullOrEmpty(publicId))
-            return BadRequest("PublicId não fornecido.");
-
-        var success = await _cloudinaryService.DeleteImageAsync(publicId);
+        var (success, error) = await _fileCloudService.DeleteFileAsync(publicId, fileName);
 
         if (!success)
-            return NotFound("Imagem não encontrada ou erro ao deletar.");
+            return BadRequest(error);
 
-        return Ok("Imagem deletada com sucesso.");
+        return Ok(new { message = $"Remoção da imagem na nuvem '{publicId}' em processamento." });
     }
 
+    [HttpGet("/files")]
+    public async Task<IActionResult> GetAllFiles()
+    {
+        var files = await _saveStorageService.GetAllAsync();
+        return Ok(files);
+    }
+
+    [HttpGet("/files/{fileName}")]
+    public async Task<IActionResult> GetFileByName(string fileName)
+    {
+        var file = await _saveStorageService.GetByNameAsync(fileName);
+        if (file is null)
+            return NotFound(new { message = $"Arquivo '{fileName}' não encontrado." });
+
+        return Ok(file);
+    }
 }

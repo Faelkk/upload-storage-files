@@ -1,11 +1,11 @@
 using CloudinaryDotNet;
 using CloudinaryDotNet.Actions;
 
-public class CloudinaryService
+public class UploadCloudService : IUploadCloudService
 {
     private readonly Cloudinary _cloudinary;
 
-    public CloudinaryService(IConfiguration configuration)
+    public UploadCloudService(IConfiguration configuration)
     {
         var cloudName = configuration["Cloudinary:CloudName"];
         var apiKey = configuration["Cloudinary:ApiKey"];
@@ -15,16 +15,14 @@ public class CloudinaryService
         _cloudinary = new Cloudinary(account);
     }
 
-    public async Task<string> UploadImageAsync(IFormFile file)
+    public async Task<string> UploadFileAsync(string fileName, Stream fileStream)
     {
-        await using var stream = file.OpenReadStream();
-
         var uploadParams = new ImageUploadParams
         {
-            File = new FileDescription(file.FileName, stream),
+            File = new FileDescription(fileName, fileStream),
             UseFilename = true,
             UniqueFilename = false,
-            Overwrite = true
+            Overwrite = true,
         };
 
         var uploadResult = await _cloudinary.UploadAsync(uploadParams);
@@ -35,11 +33,11 @@ public class CloudinaryService
         }
         else
         {
-            throw new Exception($"Falha no upload da imagem: {uploadResult.Error?.Message}");
+            throw new Exception($"Falha no upload do arquivo: {uploadResult.Error?.Message}");
         }
     }
 
-    public async Task<bool> DeleteImageAsync(string publicId)
+    public async Task<bool> DeleteFileAsync(string publicId)
     {
         var deleteParams = new DeletionParams(publicId);
         var deleteResult = await _cloudinary.DestroyAsync(deleteParams);
