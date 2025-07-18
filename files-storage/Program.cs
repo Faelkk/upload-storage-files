@@ -3,6 +3,7 @@ using FilesStorage.Services;
 using MassTransit;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.EntityFrameworkCore;
+using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -100,6 +101,8 @@ app.Use(
 );
 
 app.MapOpenApi();
+
+app.MapScalarApiReference();
 
 app.UseAuthorization();
 
