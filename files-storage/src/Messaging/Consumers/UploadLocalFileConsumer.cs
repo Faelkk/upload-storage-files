@@ -15,12 +15,26 @@ public class UploadLocalFileConsumer : IConsumer<UploadLocalFileMessage>
     {
         var msg = context.Message;
 
-        var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "UploadedFiles");
+        // Caminho relativo ao projeto real
+        var uploadsFolder = Path.Combine(
+            AppContext.BaseDirectory,
+            "..",
+            "..",
+            "..",
+            "..",
+            "files-storage",
+            "UploadedFiles"
+        );
+        uploadsFolder = Path.GetFullPath(uploadsFolder);
 
         if (!Directory.Exists(uploadsFolder))
             Directory.CreateDirectory(uploadsFolder);
 
         var filePath = Path.Combine(uploadsFolder, msg.Filename);
+
+        Console.WriteLine(
+            "[CONSUMER] UploadLocalFileConsumer recebeu mensagem e vai salvar o arquivo!"
+        );
 
         await File.WriteAllBytesAsync(filePath, msg.FileBytes);
 

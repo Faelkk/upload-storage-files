@@ -1,3 +1,4 @@
+using FilesStorage.Dtos;
 using FilesStorage.Messages;
 using FilesStorage.Services;
 using MassTransit;
@@ -24,19 +25,15 @@ public class FilestorageController : Controller
         _saveStorageService = saveStorageService;
     }
 
-    [HttpGet("/hello-world")]
-    public IActionResult HelloWorld()
-    {
-        return Ok(new { message = "Hello World" });
-    }
-
     [HttpPost("/upload-local")]
     public async Task<IActionResult> UploadFilesLocal(List<IFormFile> files)
     {
         var (success, error) = await _fileLocalService.UploadFilesAsync(files);
         if (!success)
             return BadRequest(error);
-        return Accepted(new { count = files.Count, message = "Upload local em processamento" });
+        return Accepted(
+            new UploadResponseDto { Count = files.Count, Message = "Upload local em processamento" }
+        );
     }
 
     [HttpDelete("/delete-local/{fileName}")]
@@ -45,7 +42,12 @@ public class FilestorageController : Controller
         var (success, error) = await _fileLocalService.DeleteFileAsync(fileName);
         if (!success)
             return BadRequest(error);
-        return Ok(new { message = $"Remoção do arquivo local '{fileName}' em processamento." });
+        return Ok(
+            new DeleteResponseDto
+            {
+                Message = $"Remoção do arquivo local '{fileName}' em processamento.",
+            }
+        );
     }
 
     [HttpPost("/upload-cloud")]
@@ -54,7 +56,13 @@ public class FilestorageController : Controller
         var (success, error) = await _fileCloudService.UploadFilesAsync(files);
         if (!success)
             return BadRequest(error);
-        return Ok(new { count = files.Count, message = "Upload na nuvem em processamento" });
+        return Ok(
+            new UploadResponseDto
+            {
+                Count = files.Count,
+                Message = "Upload na nuvem em processamento",
+            }
+        );
     }
 
     [HttpDelete("/delete-cloud/{publicId}")]
@@ -65,7 +73,12 @@ public class FilestorageController : Controller
         if (!success)
             return BadRequest(error);
 
-        return Ok(new { message = $"Remoção da imagem na nuvem '{publicId}' em processamento." });
+        return Ok(
+            new DeleteResponseDto
+            {
+                Message = $"Remoção da imagem na nuvem '{publicId}' em processamento.",
+            }
+        );
     }
 
     [HttpGet("/files")]
