@@ -1,29 +1,69 @@
-## 📁 Upload Storage Files
+# 📁 Upload Storage Files
 
-O Upload Storage Files é um projeto pessoal desenvolvido para controle e gerenciamento de arquivos, com suporte a upload, armazenamento local ou em nuvem (Cloudinary) e exclusão de arquivos.
-Conta com validações para tamanho e tipo de arquivo, sendo ideal para aplicações que necessitam de um sistema robusto e flexível de gerenciamento de arquivos.
+O Upload Storage Files é um projeto pessoal para gerenciar arquivos de forma prática e segura, com suporte a upload, armazenamento local ou na nuvem (Cloudinary) e exclusão de arquivos.
+Ele valida o tamanho e tipo dos arquivos para evitar erros e problemas.
+Para garantir performance e escalabilidade, usa mensageria com RabbitMQ para processar uploads e exclusões de forma assíncrona, deixando o sistema mais rápido e estável.
+A arquitetura segue o padrão MVC adaptado para APIs REST, deixando o código organizado e fácil de manter.
 
 ## 🚀 Funcionalidades
 
-Upload de arquivos (com validação de tipo e tamanho)
-
+- Upload de arquivos (com validação de tipo e tamanho)
 - ☁️ Armazenamento local ou em nuvem (Cloudinary)
-
 - ❌ Exclusão de arquivos enviados
-
 - 🔒 Validação e segurança via variáveis de ambiente
-
 - 🐳 Pronto para execução com Docker
+- 🐰 Processamento assíncrono de uploads e deleções via mensageria RabbitMQ
+
+---
+
+## 🏗️ Arquitetura do Projeto
+
+O projeto segue o padrão MVC adaptado para APIs REST, com a seguinte estrutura principal:
+
+- **Model:** Classes que representam entidades e regras de negócio (na pasta `Models`).
+- **DTOs:** Objetos de transferência de dados para comunicação clara e segura entre camadas (`Dtos`).
+- **Controller:** Responsáveis por receber requisições HTTP e orquestrar as chamadas aos serviços (`Controllers`).
+- **Services:** Contém a lógica de negócio e integração com repositórios e mensageria (`Services`).
+- **Repository:** Abstração do acesso a dados e operações com o banco (`Repository`).
+- **Messaging:** Implementação da mensageria com RabbitMQ para processamento assíncrono de uploads e deleções (`Messaging`).
+- **Context:** Configuração do banco de dados e contexto do Entity Framework Core (`Context`).
+- **Seed:** Inicialização e população do banco para testes e desenvolvimento (`Seed`).
+- **Shared:** Código compartilhado e utilitários diversos (`Shared`).
+
+## 📄 Documentação da API
+
+Este projeto utiliza Scalar para documentação automática da API REST, facilitando a visualização, teste e manutenção dos endpoints.
+A documentação fica disponível para facilitar o entendimento e consumo da API por outros desenvolvedores e serviços.
+
+**Como acessar**
+Após rodar o projeto localmente, acesse a documentação pelo navegador em:
+
+        $ http://localhost:5194/scalar
+
+**Prévia da documentação**
+
+![Swagger UI](./docs/scalar.png)
+
+## 🧪 Testes
+
+O projeto conta com uma boa cobertura de testes para garantir a qualidade:
+
+- **Testes Unitários:** Validação isolada de componentes usando **Moq** para simulação de dependências.
+- **Testes de Integração:** Executados em banco de dados **in-memory** para simular operações reais sem impacto no ambiente.
+
+---
 
 ## 🛠️ Tecnologias Utilizadas
 
 - [.NET](https://dotnet.microsoft.com/pt-br/)
-- [ASP.NET](https://learn.microsoft.com/pt-br/aspnet/core/?view=aspnetcore-9.0&WT.mc_id=dotnet-35129-website)
+- [ASP.NET Core](https://learn.microsoft.com/pt-br/aspnet/core/?view=aspnetcore-9.0&WT.mc_id=dotnet-35129-website)
 - [CloudinaryDotNet](https://cloudinary.com/documentation/dotnet_integration)
+- [RabbitMQ](https://www.rabbitmq.com/)
+- [Moq](https://github.com/moq/moq4)
+- [InMemory](https://learn.microsoft.com/pt-br/ef/core/providers/in-memory/?tabs=dotnet-core-cli)
+- [Docker](https://www.docker.com/)
 
-🔋 **Controle de versão e deploy**
-
-- [Git](https://git-scm.com)
+---
 
 ⚙️ **Como Rodar o Projeto**
 
